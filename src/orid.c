@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
+#include <dirent.h>
 
 #include "cfg.h"
 
@@ -45,7 +46,7 @@ typedef struct {
 
 void apply_settings(screen_t* scr)
 {
-	const char* fmt = "xrandr --output %s --auto --mode %dx%d --pos %dx%d --rotate %s --screen %d";
+	const char* fmt = "xrandr --output %s --auto --mode %dx%d --pos %dx%d --screen %d --rotate %s";
 	char cmd_str[512];
 	char* rot = "normal";
 
@@ -57,7 +58,7 @@ void apply_settings(screen_t* scr)
 	int w = scr->cfg.res.w, h = scr->cfg.res.h;
 	int x = scr->cfg.pos.x, y = scr->cfg.pos.y;
 
-	sprintf(cmd_str, fmt, scr->cfg.output, w, h, x, y, rot, scr->number);
+	sprintf(cmd_str, fmt, scr->cfg.output, w, h, x, y, scr->number, rot);
 	system(cmd_str);
 }
 
@@ -74,6 +75,40 @@ int cfg_term(screen_t* scr)
 
 	return 0;
 }
+
+
+char* get_next_gemma()
+{
+	static DIR* d;
+	static struct dirent* dir;
+	static char buf[PATH_MAX + NAME_MAX];
+
+	if (!d) { d = opendir("/dev/serial/by-id"); }
+
+	if (d)
+	{
+		const char* stem = "usb-Adafruit_Gemma_M0_";
+		int stem_len = strlen(stem);
+
+		if ((dir = readdir(d)) != NULL)
+		{
+			for (int i = 0; i < NAME_MAX - stem_len; ++i)
+			if (!strncmp(dir->d_name + i, stem, strlen(stem)))
+			{
+				sprintf(buf, "/dev/serial/by-id/%s", dir->d_name + i);
+				return buf;
+			}
+		}
+		else
+		{
+			closedir(d);
+			d = NULL;
+		}
+	}
+
+	return NULL;
+}
+
 
 int get_set_screen_cfg(screen_t* scr, char* base_path)
 {
@@ -102,11 +137,13 @@ int get_set_screen_cfg(screen_t* scr, char* base_path)
 
 	sprintf(buf, "%s/%d", base_path, scr->number);
 	cfg_base(buf);
-	strcpy(scr->cfg.serial_dev, cfg_str("serial-dev", "/dev/null"));
-	scr->cfg.serial_dev[strlen(scr->cfg.serial_dev) - 1] = '\0';
+
+	char* dev = get_next_gemma();
+	strcpy(scr->cfg.serial_dev, cfg_str("serial-dev", dev ? dev : "/dev/null"));
 
 	return 0;
 }
+
 
 int init_cfgs(screen_t** screens, int* screen_count)
 {

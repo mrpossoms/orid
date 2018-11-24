@@ -6,5 +6,12 @@ LINK=
 cfg.h:
 	git clone http://github.com/mrpossoms/cfg.h
 
-%: src/%.c cfg.h
-	$(CC) $(CFLAGS) $(INC) $< -o $@ $(LINK)
+bin:
+	mkdir bin
+
+%: src/%.c cfg.h bin
+	$(CC) $(CFLAGS) $(INC) $< -o bin/$@ $(LINK)
+
+.PHONY: install
+install: orid
+	cp bin/* /usr/bin

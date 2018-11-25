@@ -208,18 +208,18 @@ int main (int argc, char* argv[])
 		FD_ZERO(&sensor_fds);
 		for (int i = screen_count; i--;)
 		{
-			if (screens[i].sensors_fd > max_fd) { max_fd = screens[i].sensors_fd; }
+			if (screens[i].sensor_fd > max_fd) { max_fd = screens[i].sensor_fd; }
 			FD_SET(screens[i].sensor_fd, &sensor_fds);
 		}
 
-		switch (select(max_fd + 1, sensor_fds, NULL, NULL, NULL))
+		switch (select(max_fd + 1, &sensor_fds, NULL, NULL, NULL))
 		{
 		case 0:
 		case -1:	
 			break;
 		default:
 		for (int i = screen_count; i--;)
-			if (FD_ISSET(screens[i].sensor_fd))
+			if (FD_ISSET(screens[i].sensor_fd, &sensor_fds))
 			{
 				char buf[256] = {};
 

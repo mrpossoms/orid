@@ -200,27 +200,50 @@ int main (int argc, char* argv[])
 	}
 
 
-	char buf[256] = {};
-	while(read(screens[0].sensor_fd, buf, sizeof(buf)))
+	while(1)
 	{
-		if (strncmp("ori:", buf, 4) == 0)
+		fd_set sensor_fds;
+		int max_fd = 0;
+
+		FD_ZERO(&sensor_fds);
+		for (int i = screen_count; i--;)
 		{
-			char* axis_start = buf;
-			while (axis_start[0] != ':') axis_start++;
-			axis_start++;
-
-			for(int i = AXIS_COUNT; i--;)
-			{
-				if (!strncmp(axis_start, AXIS_NAMES[i], strlen(AXIS_NAMES[i])))
-				{
-					screens[0].major_axis = (axis_t)i;
-				}
-			}
-
-			apply_settings(screens);
+			if (screens[i].sensors_fd > max_fd) { max_fd = screens[i].sensors_fd; }
+			FD_SET(screens[i].sensor_fd, &sensor_fds);
 		}
 
-		bzero(buf, sizeof(buf));
+		switch (select(max_fd + 1, sensor_fds, NULL, NULL, NULL))
+		{
+		case 0:
+		case -1:	
+			break;
+		default:
+		for (int i = screen_count; i--;)
+			if (FD_ISSET(screens[i].sensor_fd))
+			{
+				char buf[256] = {};
+
+				read(screens[i].sensor_fd, buf, sizeof(buf));
+
+				if (strncmp("ori:", buf, 4) == 0)
+				{
+					char* axis_start = buf;
+					while (axis_start[0] != ':') axis_start++;
+					axis_start++;
+
+					for(int i = AXIS_COUNT; i--;)
+					{
+						if (!strncmp(axis_start, AXIS_NAMES[i], strlen(AXIS_NAMES[i])))
+						{
+							screens[0].major_axis = (axis_t)i;
+						}
+					}
+
+					apply_settings(screens);
+				}
+
+			}
+		}
 	}
 
 	return 0;

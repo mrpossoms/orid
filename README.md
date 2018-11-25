@@ -5,7 +5,7 @@ A physical screen orientation detection solution for linux.
 
 ## How does it work?
 
-orid is two parts software, and one part hardware. orid uses a small, very simple device attached to the back of your monitor to determine the physical orientation, and software (orid) running on your computer to listen to it. If the device says the orientation has changed, orid will invoke xrandr, and change the orientation.
+Sorid is two parts software, and one part hardware. orid uses a small, very simple device attached to the back of your monitor to determine the physical orientation, and software (orid) running on your computer to listen to it. If the device says the orientation has changed, orid will invoke xrandr, and change the orientation.
 
 ## How do I use it?
 
@@ -48,4 +48,9 @@ That will compile and install orid at `/usr/bin/`.
 The first time your run orid it will create a directory .orid in your $HOME. Within that directory there will be a number of sub-directories named 0-N where N is the number of monitors you have connected. Within each of these directories are a number of configuration files, each of which contains a single value. The only one you may need to change is named `serial-device` which contains a path to the serial file for a particular connected GEMMA. orid guesses the serial file names, so these will likely need to be changed by hand. Asside from `serial-device` there are 6 files within the sub-directory `rotation`. Each one of these states how the screen should be rotated when each axis and its particular sign are pointing down. By default they are all 'normal' however you will want to change the appropriate ones to 'left' and 'right' where appropriate. Look at the orientation of the axes on the IMU to tell which ones need to be modified based on the sensors orientation on your monitor.
 
 ### Add it as a startup program
-TODO
+
+On an Ubuntu system you can easily configure orid to run at your login. Simply press the 'windows' key, then type 'startup' select the 'Startup Applications' option. When the Startup Applications window is presented click 'Add' then fill in the following.
+
+[Startup config](https://raw.githubusercontent.com/mrpossoms/orid/master/.startup.png)
+
+Finally press 'Add', then you're finished.

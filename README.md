@@ -5,7 +5,7 @@ A physical screen orientation detection solution for linux.
 
 ## How does it work?
 
-Sorid is two parts software, and one part hardware. orid uses a small, very simple device attached to the back of your monitor to determine the physical orientation, and software (orid) running on your computer to listen to it. If the device says the orientation has changed, orid will invoke xrandr, and change the orientation.
+orid is two parts software, and one part hardware. orid uses a small, very simple device attached to the back of your monitor to determine the physical orientation, and software (orid) running on your computer to listen to it. If the device says the orientation has changed, orid will invoke xrandr, and change the orientation.
 
 ## How do I use it?
 
@@ -51,6 +51,6 @@ The first time your run orid it will create a directory .orid in your $HOME. Wit
 
 On an Ubuntu system you can easily configure orid to run at your login. Simply press the 'windows' key, then type 'startup' select the 'Startup Applications' option. When the Startup Applications window is presented click 'Add' then fill in the following.
 
-[Startup config](https://raw.githubusercontent.com/mrpossoms/orid/master/.startup.png)
+![Startup config](https://raw.githubusercontent.com/mrpossoms/orid/master/.startup.png)
 
 Finally press 'Add', then you're finished.

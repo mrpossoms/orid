@@ -34,7 +34,7 @@ typedef struct {
 		char   output[16];
 		struct { int w, h; } res;
 		struct { int x, y; } pos;
-		char*  rotations[AXIS_COUNT];
+		char   rotations[AXIS_COUNT][32];
 		char   serial_dev[PATH_MAX];
 	} cfg;
 
@@ -131,8 +131,7 @@ int get_set_screen_cfg(screen_t* scr, char* base_path)
 	{
 		char* rot = scr->cfg.rotations[i] ? scr->cfg.rotations[i] : "normal";
 		char* val = cfg_str(AXIS_NAMES[i], rot);
-		scr->cfg.rotations[i] = (char*)malloc(strlen(val));
-		strcpy(scr->cfg.rotations[i], val); 
+		strncpy(scr->cfg.rotations[i], val, sizeof(scr->cfg.rotations[0])); 
 	}
 
 	sprintf(buf, "%s/%d", base_path, scr->number);
@@ -186,25 +185,65 @@ int init_cfgs(screen_t** screens, int* screen_count)
 	return 0;
 } 
 
+
+int uninit_screens(screen_t** screens, int screen_count)
+{
+	for (int i = screen_count; i--;)
+	{
+		close((*screens)[i].sensor_fd);
+	}
+
+	free(*screens);
+	*screens = NULL;
+	
+	return 0;
+}
+
+
+int init_screens(screen_t** screens, int* screen_count)
+{
+
+	init_cfgs(screens, screen_count);
+
+	for (int i = *screen_count; i--;)
+	{
+		(*screens)[i].sensor_fd = open((*screens)[i].cfg.serial_dev, O_RDONLY);
+		if (cfg_term(*screens + i))
+		{
+			uninit_screens(screens, *screen_count);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+
 int main (int argc, char* argv[])
 {
 	screen_t* screens = NULL;
 	int screen_count = 0;
-
-	init_cfgs(&screens, &screen_count);
-
-	for (int i = screen_count; i--;)
-	{
-		screens[i].sensor_fd = open(screens[i].cfg.serial_dev, O_RDONLY);
-		if (cfg_term(screens + i)) { return 1; }
-	}
-
+	int res = 0;
 
 	while(1)
 	{
 		fd_set sensor_fds;
 		int max_fd = 0;
 
+		// initialize the screen sensors, load configs
+		if (screens == NULL)
+		{
+			if (init_screens(&screens, &screen_count))
+			{
+				// something is clearly wrong, pause for a second
+				// to not burn cpu cycles
+				sleep(1);
+				continue;
+			}
+		}
+
+		// select on all the sensor serials
 		FD_ZERO(&sensor_fds);
 		for (int i = screen_count; i--;)
 		{
@@ -214,23 +253,34 @@ int main (int argc, char* argv[])
 
 		switch (select(max_fd + 1, &sensor_fds, NULL, NULL, NULL))
 		{
+		// A timeout cant occur, so if case 0, or 1 happen something bad occured
+		// uninitalize the screen sensors, to try opening connections again
 		case 0:
-		case -1:	
+		case -1:
+			uninit_screens(&screens, screen_count);	
 			break;
 		default:
-		for (int i = screen_count; i--;)
+			for (int i = screen_count; i--;)
 			if (FD_ISSET(screens[i].sensor_fd, &sensor_fds))
 			{
 				char buf[256] = {};
 
-				read(screens[i].sensor_fd, buf, sizeof(buf));
-
+				if (read(screens[i].sensor_fd, buf, sizeof(buf)) <= 0)
+				{
+					// an error has occurred, lets reset and try to straigten it out
+					uninit_screens(&screens, screen_count);
+					continue;
+				}
+				
+				// orientation change message all begin with 'ori:' then
+				// indicate the axis experiencing gravity the most.
 				if (strncmp("ori:", buf, 4) == 0)
 				{
 					char* axis_start = buf;
 					while (axis_start[0] != ':') axis_start++;
 					axis_start++;
 
+					// find which axis is the one reported
 					for(int i = AXIS_COUNT; i--;)
 					{
 						if (!strncmp(axis_start, AXIS_NAMES[i], strlen(AXIS_NAMES[i])))
@@ -239,6 +289,7 @@ int main (int argc, char* argv[])
 						}
 					}
 
+					// apply orientation changes if needed
 					apply_settings(screens);
 				}
 

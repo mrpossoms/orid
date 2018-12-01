@@ -1,7 +1,12 @@
 CC=gcc
-CFLAGS=-g
+CFLAGS=-g -fPIC
 INC=-Icfg.h/src
 LINK=
+
+ifdef DEBUG
+CFLAGS+= -O0
+endif
+
 
 cfg.h:
 	git clone http://github.com/mrpossoms/cfg.h

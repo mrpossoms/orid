@@ -129,7 +129,7 @@ int get_set_screen_cfg(screen_t* scr, char* base_path)
 
 	for (int i=AXIS_COUNT; i--;)
 	{
-		char* rot = scr->cfg.rotations[i] ? scr->cfg.rotations[i] : "normal";
+		char* rot = scr->cfg.rotations[i][0] ? scr->cfg.rotations[i] : "normal";
 		char* val = cfg_str(AXIS_NAMES[i], rot);
 		strncpy(scr->cfg.rotations[i], val, sizeof(scr->cfg.rotations[0])); 
 	}

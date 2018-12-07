@@ -167,7 +167,7 @@ int init_cfgs(screen_t** screens, int* screen_count)
 		int x, y;
 		fscanf(
 			proc,
-			"%d: +*%s %d/%dx%d/%d+%d+%d  %s\n", 
+			"%d: +%s %d/%dx%d/%d+%d+%d  %s\n", 
 			&s.number,
 			s.cfg.output,
 			&s.cfg.res.w, &real_w,
@@ -208,6 +208,18 @@ int init_screens(screen_t** screens, int* screen_count)
 	for (int i = *screen_count; i--;)
 	{
 		(*screens)[i].sensor_fd = open((*screens)[i].cfg.serial_dev, O_RDONLY);
+
+		if ((*screens)[i].sensor_fd == -1)
+		{
+			fprintf(stderr, "init_screens(): couldn't open '%s' errno: %d\n",
+				(*screens)[i].cfg.serial_dev,
+				errno
+			);
+
+			return 2;
+		}
+
+		if (strcmp("/dev/null", (*screens)[i].cfg.serial_dev)) // avoid configuring /dev/null
 		if (cfg_term(*screens + i))
 		{
 			uninit_screens(screens, *screen_count);
@@ -247,8 +259,12 @@ int main (int argc, char* argv[])
 		FD_ZERO(&sensor_fds);
 		for (int i = screen_count; i--;)
 		{
+			// avoid selecting on /dev/null
+			if (!strcmp("/dev/null", screens[i].cfg.serial_dev)) { continue; } 
+
 			if (screens[i].sensor_fd > max_fd) { max_fd = screens[i].sensor_fd; }
 			FD_SET(screens[i].sensor_fd, &sensor_fds);
+			
 		}
 
 		switch (select(max_fd + 1, &sensor_fds, NULL, NULL, NULL))

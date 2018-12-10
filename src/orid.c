@@ -46,7 +46,7 @@ typedef struct {
 
 void apply_settings(screen_t* scr)
 {
-	const char* fmt = "xrandr --output %s --auto --mode %dx%d --pos %dx%d --screen %d --rotate %s";
+	const char* fmt = "xrandr --output %s --auto --mode %dx%d --pos %dx%d --rotate %s";
 	char cmd_str[512];
 	char* rot = "normal";
 
@@ -58,7 +58,7 @@ void apply_settings(screen_t* scr)
 	int w = scr->cfg.res.w, h = scr->cfg.res.h;
 	int x = scr->cfg.pos.x, y = scr->cfg.pos.y;
 
-	sprintf(cmd_str, fmt, scr->cfg.output, w, h, x, y, scr->number, rot);
+	sprintf(cmd_str, fmt, scr->cfg.output, w, h, x, y, rot);
 	system(cmd_str);
 }
 
@@ -297,16 +297,16 @@ int main (int argc, char* argv[])
 					axis_start++;
 
 					// find which axis is the one reported
-					for(int i = AXIS_COUNT; i--;)
+					for(int j = AXIS_COUNT; j--;)
 					{
-						if (!strncmp(axis_start, AXIS_NAMES[i], strlen(AXIS_NAMES[i])))
+						if (!strncmp(axis_start, AXIS_NAMES[j], strlen(AXIS_NAMES[j])))
 						{
-							screens[0].major_axis = (axis_t)i;
+							screens[i].major_axis = (axis_t)j;
 						}
 					}
 
 					// apply orientation changes if needed
-					apply_settings(screens);
+					apply_settings(screens + i);
 				}
 
 			}
